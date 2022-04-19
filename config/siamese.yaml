@@ -1,0 +1,10 @@
+trainer:
+  max_epochs: 20
+model:
+  class_path: models.SiameseNet
+  init_args:
+    embedding_net: models.EmbeddingNet
+data:
+  class_path: data_modules.SiameseDataModule
+  init_args:
+    batch_size: 1000
