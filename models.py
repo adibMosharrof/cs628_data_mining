@@ -53,7 +53,7 @@ class BaseModel(pl.LightningModule):
         similarities = F.cosine_similarity(imgs_emb[0], imgs_emb[1])
         preds = (similarities > self.threshold).float()
         acc = self.val_metrics(preds, labels).detach()
-        self.log("acc", acc, prog_bar=True)
+        self.log("acc", acc, prog_bar=True, on_step=False)
 
 
 class ClassificationNet(pl.LightningModule):

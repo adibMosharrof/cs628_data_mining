@@ -1,0 +1,17 @@
+trainer:
+  max_epochs: 2
+model:
+  class_path: models.MetricNet
+  init_args:
+    loss_func:
+      class_path: my_losses.TripletLoss
+      init_args:
+        margin: 1
+    embedding_net: models.EmbeddingNet
+
+data:
+  class_path: data_modules.MetricDataModule
+  init_args:
+    batch_size: 1000
+    metric_name: triplet
+    num_workers: 8
