@@ -1,5 +1,5 @@
 trainer:
-  max_epochs: 2
+  max_epochs: 50
 model:
   class_path: models.MetricNet
   init_args:
@@ -15,3 +15,4 @@ data:
     batch_size: 1000
     metric_name: triplet
     num_workers: 8
+    dataset_name: FashionMNIST

@@ -1,18 +1,33 @@
+import enum
 from typing import List
 
 import numpy as np
-from PIL import Image
+import torch
+import torchvision.transforms as T
+from PIL import Image, ImageOps
 from torch.utils.data.dataset import Dataset
+from torchvision.datasets import CIFAR10, FashionMNIST
 
 
 class BaseDataset(Dataset):
-    def __init__(self, labels, data, transform) -> None:
+    def __init__(self, torch_dataset, step="train") -> None:
         super().__init__()
-        self.transform = transform
-
-        self.labels = labels
-        self.data = data
-        self.labels_set = set(labels.numpy())
+        self.torch_dataset = torch_dataset
+        self.transform = torch_dataset.transform
+        if isinstance(torch_dataset, FashionMNIST):
+            if step == "train":
+                self.labels = torch_dataset.train_labels
+                self.data = torch_dataset.train_data
+            elif step == "test":
+                self.labels = torch_dataset.test_labels
+                self.data = torch_dataset.test_data
+        elif isinstance(torch_dataset, CIFAR10):
+            # self.transform = T.Compose([self.transform, T.Resize([28, 28])])
+            self.labels = torch.tensor(torch_dataset.targets)
+            self.data = torch.tensor(torch_dataset.data)
+        # self.labels = labels
+        # self.data = data
+        self.labels_set = set(self.labels.numpy())
         self.label_to_indices = {
             label: np.where(self.labels.numpy() == label)[0]
             for label in self.labels_set
@@ -23,11 +38,18 @@ class BaseDataset(Dataset):
     def read_images(self, imgs) -> List[any]:
         out = []
         for i in imgs:
-            img = Image.fromarray(i.numpy(), mode="L")
+            img = self.get_image(i)
             if self.transform:
                 img = self.transform(img)
             out.append(img)
         return out
+
+    def get_image(self, i):
+        if isinstance(self.torch_dataset, FashionMNIST):
+            return Image.fromarray(i.numpy(), mode="L")
+        elif isinstance(self.torch_dataset, CIFAR10):
+            img = Image.fromarray(i.numpy(), mode="RGB")
+            return ImageOps.grayscale(img)
 
     def __len__(self):
         return len(self.data)
@@ -35,11 +57,7 @@ class BaseDataset(Dataset):
 
 class SiameseTrainDataset(BaseDataset):
     def __init__(self, mnist_dataset) -> None:
-        super().__init__(
-            mnist_dataset.train_labels,
-            mnist_dataset.train_data,
-            mnist_dataset.transform,
-        )
+        super().__init__(mnist_dataset, step="train")
 
     def __getitem__(self, index):
         target = np.random.randint(0, 2)
@@ -61,11 +79,7 @@ class SiameseTrainDataset(BaseDataset):
 class SiameseValidationDataset(BaseDataset):
     def __init__(self, mnist_dataset) -> None:
         # super().__init__()
-        super().__init__(
-            mnist_dataset.test_labels,
-            mnist_dataset.test_data,
-            mnist_dataset.transform,
-        )
+        super().__init__(mnist_dataset, step="train")
         positive_pairs = [
             [
                 i,
@@ -101,11 +115,7 @@ class SiameseValidationDataset(BaseDataset):
 
 class TripletTrainDataset(BaseDataset):
     def __init__(self, mnist_dataset) -> None:
-        super().__init__(
-            mnist_dataset.train_labels,
-            mnist_dataset.train_data,
-            mnist_dataset.transform,
-        )
+        super().__init__(mnist_dataset)
 
     def __getitem__(self, index: int):
         img1, label1 = self.data[index], self.labels[index].item()
@@ -122,11 +132,7 @@ class TripletTrainDataset(BaseDataset):
 
 class TripletValidationDataset(BaseDataset):
     def __init__(self, mnist_dataset) -> None:
-        super().__init__(
-            mnist_dataset.train_labels,
-            mnist_dataset.train_data,
-            mnist_dataset.transform,
-        )
+        super().__init__(mnist_dataset)
         self.triplets = [
             [
                 i,

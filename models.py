@@ -104,7 +104,7 @@ class MetricNet(BaseModel):
         loss_func: nn.Module = None,
     ):
         super().__init__(embedding_net)
-        self.save_hyperparameters(ignore=["embedding_net"])
+        self.save_hyperparameters(ignore=["embedding_net", "loss_func"])
         self.criterion = loss_func
 
     def forward(self, imgs):
