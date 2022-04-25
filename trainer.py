@@ -1,10 +1,8 @@
 from pytorch_lightning import LightningDataModule, LightningModule
-from pytorch_lightning.utilities.cli import (
-    DATAMODULE_REGISTRY,
-    MODEL_REGISTRY,
-    LightningArgumentParser,
-    LightningCLI,
-)
+from pytorch_lightning.utilities.cli import (DATAMODULE_REGISTRY,
+                                             MODEL_REGISTRY,
+                                             LightningArgumentParser,
+                                             LightningCLI)
 
 import data_modules
 import embedding_utils
@@ -39,6 +37,19 @@ class MyLightningCLI(LightningCLI):
             out_dir=self.trainer.log_dir,
             plot_file_name="val_embeddings",
         )
+
+    def before_fit(self):
+        data_params = vars(self.config.fit.data.init_args)
+        model_params = vars(self.config.fit.model.init_args)
+        trainer_params = vars(self.config.fit.trainer)
+        hparams_dict = {
+            "dataset_name": data_params["dataset_name"],
+            "metric_name": data_params["metric_name"],
+            "loss": model_params["loss_func"]["class_path"],
+            "epochs": trainer_params["max_epochs"],
+        }
+
+        self.trainer.logger.log_hyperparams(hparams_dict)
 
 
 if __name__ == "__main__":
